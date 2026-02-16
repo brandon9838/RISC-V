@@ -37,6 +37,8 @@ module EX_stage(
     input                   IDEX_ctrl_rtype,
     input                   IDEX_ctrl_itype,
     input                   IDEX_ctrl_jalr,
+    input                   IDEX_ctrl_auipc,
+    input                   IDEX_ctrl_lui,
     input                   IDEX_ctrl_stype,
     input                   IDEX_ctrl_btype,
     input                   IDEX_ctrl_utype,
@@ -44,8 +46,13 @@ module EX_stage(
     input                   IDEX_ctrl_alusrc,
     input           [31:0]  IDEX_rs1_data,
     input           [31:0]  IDEX_rs2_data,
-    input           [31:0]  IDEX_imm,
+    input           [31:0]  IDEX_pc,
+    input           [31:0]  IDEX_imm,       //for rtype, this is simply inst, get func7 from here
     input           [ 2:0]  IDEX_func3,
+    output reg      [4 :0]  EXMEM_regw_addr,
+    output reg      [31:0]  EXMEM_regw_data, //also sw addr
+    output reg      [31:0]  EXMEM_sw_data, // sw data
+    output          [31:0]  EX_jump_addr       // all b type and jalr
 );
     genvar i;
     //Itype func3
@@ -69,9 +76,16 @@ module EX_stage(
     localparam SRA  =3'b101;
     localparam OR   =3'b110;
     localparam AND  =3'b111;
+    //Btype fun3
+    localparam BEQ  =3'b000;
+    localparam BNE  =3'b001;
+    localparam BLT  =3'b100;
+    localparam BGE  =3'b101;
+    localparam BLTU =3'b110;
+    localparam BGEU =3'b111;
 
+    reg [31:0]  ALU_out;
     reg [31:0]  ALU_add;
-    reg [31:0]  ALU_addr_add;
     reg [32:0]  ALU_sub;
     reg [31:0]  ALU_and;
     reg [31:0]  ALU_or; 
@@ -84,6 +98,8 @@ module EX_stage(
     reg         ALU_less_unsigned;
     reg         ALU_less_signed;
     
+    reg [31:0]  EXMEM_extra_out_w;
+
     wire        shift_left=~IDEX_func3[2];
     wire        logical_shift=IDEX_ctrl_itype?~IDEX_imm[10]:IDEX_imm[30];
     Barrel_Shift u_barrel_shift (
@@ -96,7 +112,7 @@ module EX_stage(
 
     always@(*)begin //ALU combinational circuit
 		//ALU input assignment
-		ALU_in1=IDEX_rs1_data;
+		ALU_in1=(IDEX_ctrl_auipc)?IDEX_pc:IDEX_rs1_data;
         ALU_in2=(IDEX_ctrl_alusrc)?IDEX_rs2_data:IDEX_imm;
 		
 		//ALU operations
@@ -105,7 +121,7 @@ module EX_stage(
 		ALU_and=ALU_in1 & ALU_in2;
 		ALU_or =ALU_in1 | ALU_in2;
 		ALU_xor=ALU_in1 ^ ALU_in2;
-		
+		//ALU comparison
         ALU_not_zero=(|ALU_sub);
 		ALU_zero=!ALU_not_zero;
         ALU_less_unsigned=ALU_sub[32];
@@ -114,7 +130,7 @@ module EX_stage(
 
 		//ALU output MUX
 		if (IDEX_ctrl_itype) begin	//Itype
-            if      (IDEX_ctrl_jalr)    ALU_out={ALU_add[31:1],1'b0}
+            if      (IDEX_ctrl_jalr)    ALU_out={ALU_add[31:1],1'b0}; //this is the jalr jump address
 			else if (IDEX_func3==SLTI)  ALU_out=ALU_less_signed;
             else if (IDEX_func3==SLTIU) ALU_out=ALU_less_unsigned;
 			else if (IDEX_func3==ANDI)	ALU_out=ALU_and;
@@ -126,52 +142,49 @@ module EX_stage(
 			else						ALU_out=ALU_add; // addi/lw
 		end
         else if (IDEX_ctrl_rtype) begin	//Rtype
-			if      (IDEX_func3==ADD &&
-                     !IDEX_imm[30])		    ALU_out=ALU_add;
-            else if (IDEX_func3==SUB &&
-                     IDEX_imm[30])		    ALU_out=ALU_sub[31:0];
-            else if (IDEX_func3==SUB &&
-                     IDEX_imm[25])		    ALU_out=0;  //reserved for mul
+			if      (IDEX_func3==ADD)begin
+                if      (IDEX_imm[25])      ALU_out=0;  //reserved for mul, not implemented yet
+                else if (!IDEX_imm[30])		ALU_out=ALU_add;
+                else                        ALU_out=ALU_sub[31:0];
+            end
             else if (IDEX_func3==SLT)		ALU_out=ALU_less_signed;
             else if (IDEX_func3==SLTU)		ALU_out=ALU_less_unsigned;
             else if (IDEX_func3==XOR)		ALU_out=ALU_xor;
             else if (IDEX_func3==OR)		ALU_out=ALU_or;
             else if (IDEX_func3==AND)		ALU_out=ALU_and;
-            else if (IDEX_func3==SLL ||
-                     IDEX_func3==SRL ||
-                     IDEX_func3==SRA)		ALU_out=ALU_shift;
+            else 		                    ALU_out=ALU_shift; //SLL/SRL/SRA
         end
-			default:						ALU_out=ALU_sub; // beq/jal
+        else if (IDEX_ctrl_btype) begin //Btype
+            if      (IDEX_func3==BEQ)   ALU_out=ALU_zero;
+			else if (IDEX_func3==BNE)   ALU_out=ALU_not_zero;
+            else if (IDEX_func3==BLT)   ALU_out=ALU_less_signed;
+			else if (IDEX_func3==BGE)	ALU_out=!ALU_less_signed;
+            else if (IDEX_func3==BLTU)  ALU_out=ALU_less_unsigned;
+            else                        ALU_out=!ALU_less_unsigned;//BGEU
+        end
+		else 	                        ALU_out=ALU_add;//Stype addr/auipc data **lui/jal will not use ALU_out 
 	end
 	
-	always@(*)begin //Combinational circuit
-		imm_sign_ext_IDEX={{16{imm_IDEX_r[15]}}, imm_IDEX_r};
-		imm_zero_ext_IDEX={16'h0000,imm_IDEX_r};
-		beq_addr_IDEX={{14{imm_IDEX_r[15]}}, imm_IDEX_r,2'b00} + PC4_IDEX_r;
-		jr_addr_IDEX=rs_data_IDEX_r;
-		
-		if (ctrl_mem_stall)begin
-			reg_write_addr_EXMEM_w=reg_write_addr_EXMEM_r;
-			reg_write_data_EXMEM_w=reg_write_data_EXMEM_r;
-			sw_rt_data_EXMEM_w=sw_rt_data_EXMEM_r;
-		end
-		else begin
-			reg_write_addr_EXMEM_w=reg_write_addr_IDEX_r;
-			reg_write_data_EXMEM_w=ALU_out;
-			sw_rt_data_EXMEM_w=rt_data_IDEX_r;
-		end
-	end
-	
-	always@( posedge clk or negedge rst_n ) begin	//Sequential circuit
-		if(!rst_n)begin
-			reg_write_addr_EXMEM_r<=5'b00000;
-			reg_write_data_EXMEM_r<=32'h00000000;
-			sw_rt_data_EXMEM_r<=32'h00000000;
-		end
-		else begin
-			reg_write_addr_EXMEM_r<=reg_write_addr_EXMEM_w;
-			reg_write_data_EXMEM_r<=reg_write_data_EXMEM_w;
-			sw_rt_data_EXMEM_r<=sw_rt_data_EXMEM_w;
+    always@(*)begin
+        //if      (stall)             EXMEM_regw_data_w=EXMEM_regw_data; //sequential clock gating
+        if      (IDEX_ctrl_jtype||
+                 IDEX_ctrl_jalr)    EXMEM_regw_data_w=IDEX_pc;  //jal/jalr return pc
+        else if (IDEX_ctrl_lui)     EXMEM_regw_data_w=IDEX_imm; //lui data
+        else                        EXMEM_regw_data_w=ALU_out;  //other
+    end
+
+    wire [31:0] branch_addr=IDEX_pc+IDEX_imm;
+	assign EX_jump_addr=(IDEX_ctrl_jalr)?ALU_out:branch_addr;
+
+    always@(posedge clk or negedge rst_n)begin
+        if (!rst_n)         EXMEM_regw_addr<=0;
+        else if (!stall)    EXMEM_regw_addr<=IDEX_regw_addr;
+    end
+    
+	always@( posedge clk) begin
+		if (!stall) begin
+            EXMEM_regw_data<=EXMEM_regw_data_w;
+            EXMEM_sw_data<=IDEX_rs2_data;
 		end
 	end
 endmodule

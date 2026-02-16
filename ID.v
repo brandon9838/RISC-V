@@ -14,9 +14,10 @@ module ID_stage(
     input       [31:0]  IFID_inst,
     input       [31:0]  IFID_pc,
     input       [4 :0]  EXMEM_regw_addr,
+    input       [31:0]  EXMEM_regw_data_w,
     input       [4 :0]  MEMWB_regw_addr,
+    input       [31:0]  MEMWB_regw_data_w,
     input       [31:0]  MEMWB_regw_data,
-    input       [31:0]  alu_out,
     output  reg [31:0]  IDEX_rs1_data,
     output  reg [31:0]  IDEX_rs2_data,
     output  reg [ 4:0]  IDEX_regw_addr,
@@ -63,7 +64,7 @@ module ID_stage(
 	always@(posedge clk)begin //Rs1 combinational circuit(forwarding)
 		if (!stall)begin
             if      (jalr)              IDEX_rs1_data   <=  IFID_pc;	
-    		else if (EX_forward_rs1)	IDEX_rs1_data   <=  alu_out;
+    		else if (EX_forward_rs1)	IDEX_rs1_data   <=  EXMEM_regw_data_w;
             else if (MEM_forward_rs1)   IDEX_rs1_data   <=  MEMWB_regw_data_w;
     														//cannot use EXMEM_regw_data because it could be a lw 
     		else if (WB_forward_rs1)	IDEX_rs1_data   <=  MEMWB_regw_data;
@@ -77,7 +78,7 @@ module ID_stage(
 	always@(posedge clk)begin //Rs2 combinational circuit(forwarding)
 		if (!stall)begin
             if      (jalr)              IDEX_rs2_data   <=  0;	
-    		else if (EX_forward_rs2)	IDEX_rs2_data   <=  alu_out;
+    		else if (EX_forward_rs2)	IDEX_rs2_data   <=  EXMEM_regw_data_w;
             else if (MEM_forward_rs2)   IDEX_rs2_data   <=  MEMWB_regw_data_w;
     														//cannot use EXMEM_regw_data because it could be a lw 
     		else if (WB_forward_rs2)	IDEX_rs2_data   <=  MEMWB_regw_data;
@@ -91,7 +92,7 @@ module ID_stage(
             else if (IFID_ctrl_stype)	IDEX_imm   <=  {{21{IFID_inst[31]}},IFID_inst[30:25],IFID_inst[11:7]};
             else if (IFID_ctrl_btype)	IDEX_imm   <=  {{20{IFID_inst[31]}},IFID_inst[7],IFID_inst[30:25],IFID_inst[11:8],1'b0};
             else if (IFID_ctrl_utype)	IDEX_imm   <=  {IFID_inst[31:12],12'd0};
-            else if (IFID_ctrl_jtype)   IDEX_imm   <=  {IFID_inst[31],IFID_inst[19:12],IFID_inst[20],IFID_inst[30:21],1'd0};
+            //else if (IFID_ctrl_jtype)   IDEX_imm   <=  {IFID_inst[31],IFID_inst[19:12],IFID_inst[20],IFID_inst[30:21],1'd0}; //not used, jal jump is directly handled in IF stage.
             else                        IDEX_imm   <=  IFID_inst; //Rtype unused, store func7 for later use
         end
 	end
