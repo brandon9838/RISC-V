@@ -1,38 +1,8 @@
 
-
-module Barrel_Shift(
-    input   [31:0]    data_in,
-    input   [ 4:0]    shamt,
-    input             shift_left,
-    input             logical_shift,
-    output  [31:0]    data_out
-);
-    genvar i;
-    reg [31:0] mid_res [0:4];
-    wire fill_bit=logical_shift?1'b0:data_in[31];
-    generate
-    always@(*)begin
-        if (shamt[0]) begin
-            if      (shift_left)    mid_res[0]={data_in[30:0],1'b0};
-            else                    mid_res[0]={fill_bit,data_in[31:1]};
-        end 
-        else mid_res[0]=data_in;
-    end
-    for (i=1;i<5;i=i+1)begin
-        always@(*)begin
-            if (shamt[i]) begin
-                if      (shift_left)    mid_res[i]={mid_res[i-1][31-(2**i):0],{(2**i){1'b0}}};
-                else                    mid_res[i]={{(2**i){fill_bit}},mid_res[i-1][31:(2**i)]};
-            end 
-            else mid_res[i]=mid_res[i-1];
-        end
-    end 
-    endgenerate
-    assign data_out = mid_res[4];
-endmodule
 module EX_stage(
     input                   clk,
     input                   rst_n,
+    input                   mem_stall,
     input                   stall,
     input                   IDEX_ctrl_rtype,
     input                   IDEX_ctrl_itype,
@@ -52,7 +22,8 @@ module EX_stage(
     output reg      [4 :0]  EXMEM_regw_addr,
     output reg      [31:0]  EXMEM_regw_data, //also sw addr
     output reg      [31:0]  EXMEM_sw_data, // sw data
-    output          [31:0]  EX_jump_addr       // all b type and jalr
+    output          [31:0]  EX_jump_addr,       // all b type and jalr
+    output                  mult_stall
 );
     genvar i;
     //Itype func3
@@ -109,7 +80,20 @@ module EX_stage(
     .logical_shift  (logical_shift  ),              
     .data_out       (ALU_shift      )                
     );
-
+    wire mult_start = IDEX_ctrl_rtype && (IDEX_func3==ADD) && (IDEX_imm[25]);
+    wire mult_ready;
+    wire[31:0] mult_out;
+    Cycle_8_mult u_cycle_8_mult(
+    .clk            (clk        ),
+    .rst_n          (rst_n      ),
+    .mem_stall      (mem_stall  ),
+    .start          (mult_start ),
+    .data_in_1      (ALU_in1    ),
+    .data_in_2      (ALU_in2    ),
+    .ready          (mult_ready ),
+    .data_out       (mult_out   )
+    );
+    wire mult_stall=mult_start && !mult_ready;
     always@(*)begin //ALU combinational circuit
 		//ALU input assignment
 		ALU_in1=(IDEX_ctrl_auipc)?IDEX_pc:IDEX_rs1_data;
@@ -143,7 +127,7 @@ module EX_stage(
 		end
         else if (IDEX_ctrl_rtype) begin	//Rtype
 			if      (IDEX_func3==ADD)begin
-                if      (IDEX_imm[25])      ALU_out=0;  //reserved for mul, not implemented yet
+                if      (IDEX_imm[25])      ALU_out=mult_out;  //reserved for mul, not implemented yet
                 else if (!IDEX_imm[30])		ALU_out=ALU_add;
                 else                        ALU_out=ALU_sub[31:0];
             end
@@ -168,7 +152,7 @@ module EX_stage(
     always@(*)begin
         //if      (stall)             EXMEM_regw_data_w=EXMEM_regw_data; //sequential clock gating
         if      (IDEX_ctrl_jtype||
-                 IDEX_ctrl_jalr)    EXMEM_regw_data_w=IDEX_pc;  //jal/jalr return pc
+                 IDEX_ctrl_jalr)    EXMEM_regw_data_w=IDEX_pc+4;  //jal/jalr return pc
         else if (IDEX_ctrl_lui)     EXMEM_regw_data_w=IDEX_imm; //lui data
         else                        EXMEM_regw_data_w=ALU_out;  //other
     end
@@ -187,4 +171,90 @@ module EX_stage(
             EXMEM_sw_data<=IDEX_rs2_data;
 		end
 	end
+endmodule
+
+
+module Barrel_Shift(
+    input   [31:0]    data_in,
+    input   [ 4:0]    shamt,
+    input             shift_left,
+    input             logical_shift,
+    output  [31:0]    data_out
+);
+    genvar i;
+    reg [31:0] mid_res [0:4];
+    wire fill_bit=logical_shift?1'b0:data_in[31];
+    generate
+    always@(*)begin
+        if (shamt[0]) begin
+            if      (shift_left)    mid_res[0]={data_in[30:0],1'b0};
+            else                    mid_res[0]={fill_bit,data_in[31:1]};
+        end 
+        else mid_res[0]=data_in;
+    end
+    for (i=1;i<5;i=i+1)begin
+        always@(*)begin
+            if (shamt[i]) begin
+                if      (shift_left)    mid_res[i]={mid_res[i-1][31-(2**i):0],{(2**i){1'b0}}};
+                else                    mid_res[i]={{(2**i){fill_bit}},mid_res[i-1][31:(2**i)]};
+            end 
+            else mid_res[i]=mid_res[i-1];
+        end
+    end 
+    endgenerate
+    assign data_out = mid_res[4];
+endmodule
+
+module Cycle_8_mult(
+    input               clk,
+    input               rst_n,
+    input               mem_stall,  //in case of cache miss, long stall, hold result temporarily
+    input               start,      //start stays up, as multiply introduce a mult stall.
+    input       [31:0]  data_in_1,
+    input       [31:0]  data_in_2,
+    output              ready,
+    output reg  [31:0]  data_out
+);
+
+reg [7:0]   progress;
+assign ready=progress[7];
+
+reg [3 :0]  mult_in2;
+reg [31:0]  shift_res;
+
+always@(*)begin
+    if      (start && !(|progress))  mult_in2=data_in_2[3    :0];
+    else if (progress[0])            mult_in2=data_in_2[7    :4];
+    else if (progress[1])            mult_in2=data_in_2[11   :8];
+    else if (progress[2])            mult_in2=data_in_2[15   :12];
+    else if (progress[3])            mult_in2=data_in_2[19   :16];
+    else if (progress[4])            mult_in2=data_in_2[23   :20];
+    else if (progress[5])            mult_in2=data_in_2[27   :24];
+    else                                mult_in2=data_in_2[31   :28];
+end
+wire[31:0]mult_res=data_in_1*mult_in2;
+
+always@(*)begin
+    if      (start && !(|progress))  shift_res=mult_res;
+    else if (progress[0])            shift_res=mult_res<<4;
+    else if (progress[1])            shift_res=mult_res<<8;
+    else if (progress[2])            shift_res=mult_res<<12;
+    else if (progress[3])            shift_res=mult_res<<16;
+    else if (progress[4])            shift_res=mult_res<<20;
+    else if (progress[5])            shift_res=mult_res<<24;
+    else                             shift_res=mult_res<<28;
+end
+always@(posedge clk)begin
+    if !(mem_stall && ready)begin
+        if      (start && !(|progress))         data_out<=shift_res;
+        else if (start || (|progress[6:0]))     data_out<=data_out+shift_res;
+    end    
+end
+always@(posedge clk or negedge rst_n)begin
+    if (!rst_n)                                 progress<=0;
+    else if !(mem_stall && ready)begin
+        if (start && !(|progress))              progress<=1;
+        else                                    progress<=progress<<1;
+    end    
+end
 endmodule
