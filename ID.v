@@ -23,7 +23,9 @@ module ID_stage(
     output  reg [ 4:0]  IDEX_regw_addr,
     output  reg [31:0]  IDEX_pc,
     output  reg [31:0]  IDEX_imm,
-    output  reg [ 2:0]  IDEX_func3
+    output  reg [ 2:0]  IDEX_func3,
+    output              EX_forward_rs1,
+    output              EX_forward_rs2
 );
     genvar i;
     //IDEX stage
@@ -57,14 +59,13 @@ module ID_stage(
     endgenerate	
 
 //====  IDEX stage combinational/sequential circuit ==============================
-    wire jalr_or_jal=(IFID_inst[6:0]==7'b1100111) && (IFID_inst[11:7]==3'b000); 
-    wire EX_forward_rs1 =(IDEX_regw_addr==rs1_addr   && IDEX_ctrl_regw   && rs1_addr!=0);
-    wire MEM_forward_rs1=(EXMEM_regw_addr==rs1_addr  && EXMEM_ctrl_regw  && rs1_addr!=0);
-    wire WB_forward_rs1 =(MEMWB_regw_addr==rs1_addr  && MEMWB_ctrl_regw  && rs1_addr!=0);
+    //wire jalr_or_jal=(IFID_inst[6:0]==7'b1100111) && (IFID_inst[11:7]==3'b000); 
+    assign  EX_forward_rs1 =(IDEX_regw_addr==rs1_addr   && IDEX_ctrl_regw   && rs1_addr!=0);
+    wire    MEM_forward_rs1=(EXMEM_regw_addr==rs1_addr  && EXMEM_ctrl_regw  && rs1_addr!=0);
+    wire    WB_forward_rs1 =(MEMWB_regw_addr==rs1_addr  && MEMWB_ctrl_regw  && rs1_addr!=0);
 	always@(posedge clk)begin //Rs1 combinational circuit(forwarding)
 		if (!stall)begin
-            if      (jalr)              IDEX_rs1_data   <=  IFID_pc;	
-    		else if (EX_forward_rs1)	IDEX_rs1_data   <=  EXMEM_regw_data_w;
+    		if      (EX_forward_rs1)	IDEX_rs1_data   <=  EXMEM_regw_data_w;
             else if (MEM_forward_rs1)   IDEX_rs1_data   <=  MEMWB_regw_data_w;
     														//cannot use EXMEM_regw_data because it could be a lw 
     		else if (WB_forward_rs1)	IDEX_rs1_data   <=  MEMWB_regw_data;
@@ -72,13 +73,12 @@ module ID_stage(
         end
 	end
 
-    wire EX_forward_rs2 =(IDEX_regw_addr==rs2_addr   && IDEX_reg_write   && rs2_addr!=0);
-    wire MEM_forward_rs2=(EXMEM_regw_addr==rs2_addr  && EXMEM_reg_write  && rs2_addr!=0);
-    wire WB_forward_rs2 =(MEMWB_regw_addr==rs2_addr  && MEMWB_reg_write  && rs2_addr!=0);
+    assign  EX_forward_rs2 =(IDEX_regw_addr==rs2_addr   && IDEX_reg_write   && rs2_addr!=0);
+    wire    MEM_forward_rs2=(EXMEM_regw_addr==rs2_addr  && EXMEM_reg_write  && rs2_addr!=0);
+    wire    WB_forward_rs2 =(MEMWB_regw_addr==rs2_addr  && MEMWB_reg_write  && rs2_addr!=0);
 	always@(posedge clk)begin //Rs2 combinational circuit(forwarding)
 		if (!stall)begin
-            if      (jalr)              IDEX_rs2_data   <=  0;	
-    		else if (EX_forward_rs2)	IDEX_rs2_data   <=  EXMEM_regw_data_w;
+            if      (EX_forward_rs2)	IDEX_rs2_data   <=  EXMEM_regw_data_w;
             else if (MEM_forward_rs2)   IDEX_rs2_data   <=  MEMWB_regw_data_w;
     														//cannot use EXMEM_regw_data because it could be a lw 
     		else if (WB_forward_rs2)	IDEX_rs2_data   <=  MEMWB_regw_data;

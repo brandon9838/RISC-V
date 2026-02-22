@@ -12,10 +12,11 @@ module IF_stage#(
     output  reg [31:0]  IFID_pc,
     input               loaduse_bubble,
 	input               stall,
-    input               IDEX_beq_taken,
-    input               IDEX_jr,
+	input 				IF_ctrl_jal,
+    input               IDEX_ctrl_beq_taken,
+    input               IDEX_ctrl_jalr,
     input       [31:0]  IDEX_beq_addr,
-    input       [31:0]  IDEX_jr_addr
+    input       [31:0]  IDEX_jalr_addr
 );
 
     reg         [31:0] pc_r,pc_w,pc4;
@@ -46,9 +47,9 @@ module IF_stage#(
 
 	always@(*)begin //Combinational circuit 
 		if(stall || loaduse_bubble)	                pc_w=pc_r;
-		else if (ICACHE_rdata[6:0]==7'b1101111)		pc_w=jal_addr;
-		else if (IDEX_beq_taken)				    pc_w=IDEX_beq_addr;
-		else if (IDEX_jr)						    pc_w=IDEX_jr_addr;
+		else if (IDEX_ctrl_beq_taken)				pc_w=IDEX_beq_addr;
+		else if (IDEX_ctrl_jalr)					pc_w=IDEX_jalr_addr;
+		else if (IF_ctrl_jal)						pc_w=jal_addr; //keep io simple, does not pass this to 
 		else 										pc_w=pc4;
 	end                                 
 
@@ -61,14 +62,10 @@ module IF_stage#(
 		if (stall || loaduse_bubble)begin
 			IFID_inst_w=IFID_inst;
 			IFID_pc_w=IFID_pc;
-		end
-		else if (flush)begin
-			IFID_inst_w=32'h00000000;
-			IFID_pc_w=pc4;
-		end
+		end //flush handled in control unit
 		else begin
 			IFID_inst_w=ICACHE_rdata;
-			IFID_pc_w=pc4;
+			IFID_pc_w=pc_r;
 		end
 	end
 		

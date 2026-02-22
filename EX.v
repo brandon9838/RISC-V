@@ -22,7 +22,8 @@ module EX_stage(
     output reg      [4 :0]  EXMEM_regw_addr,
     output reg      [31:0]  EXMEM_regw_data, //also sw addr
     output reg      [31:0]  EXMEM_sw_data, // sw data
-    output          [31:0]  EX_jump_addr,       // all b type and jalr
+    output          [31:0]  EX_alu_out,       // all b type comparison res and jalr addr
+    output          [31:0]  EX_branch_addr,   // all b type addr
     output                  mult_stall
 );
     genvar i;
@@ -97,7 +98,7 @@ module EX_stage(
     always@(*)begin //ALU combinational circuit
 		//ALU input assignment
 		ALU_in1=(IDEX_ctrl_auipc)?IDEX_pc:IDEX_rs1_data;
-        ALU_in2=(IDEX_ctrl_alusrc)?IDEX_rs2_data:IDEX_imm;
+        ALU_in2=(IDEX_ctrl_alusrc)?IDEX_imm:IDEX_rs2_data;
 		
 		//ALU operations
 		ALU_add=ALU_in1 + ALU_in2;
@@ -148,17 +149,17 @@ module EX_stage(
         end
 		else 	                        ALU_out=ALU_add;//Stype addr/auipc data **lui/jal will not use ALU_out 
 	end
-	
+	assign EX_comp_res=ALU_out[0]; //control unit decides whether jump or not
     always@(*)begin
         //if      (stall)             EXMEM_regw_data_w=EXMEM_regw_data; //sequential clock gating
         if      (IDEX_ctrl_jtype||
                  IDEX_ctrl_jalr)    EXMEM_regw_data_w=IDEX_pc+4;  //jal/jalr return pc
-        else if (IDEX_ctrl_lui)     EXMEM_regw_data_w=IDEX_imm; //lui data
+        else if (IDEX_ctrl_lui)     EXMEM_regw_data_w=IDEX_imm; //lui data, could use 0+imm, but decide to use a mux 
         else                        EXMEM_regw_data_w=ALU_out;  //other
     end
 
-    wire [31:0] branch_addr=IDEX_pc+IDEX_imm;
-	assign EX_jump_addr=(IDEX_ctrl_jalr)?ALU_out:branch_addr;
+    assign EX_branch_addr=IDEX_pc+IDEX_imm;
+    assign EX_alu_out=ALU_out;
 
     always@(posedge clk or negedge rst_n)begin
         if (!rst_n)         EXMEM_regw_addr<=0;
