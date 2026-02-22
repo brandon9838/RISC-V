@@ -73,9 +73,9 @@ module ID_stage(
         end
 	end
 
-    assign  EX_forward_rs2 =(IDEX_regw_addr==rs2_addr   && IDEX_reg_write   && rs2_addr!=0);
-    wire    MEM_forward_rs2=(EXMEM_regw_addr==rs2_addr  && EXMEM_reg_write  && rs2_addr!=0);
-    wire    WB_forward_rs2 =(MEMWB_regw_addr==rs2_addr  && MEMWB_reg_write  && rs2_addr!=0);
+    assign  EX_forward_rs2 =(IDEX_regw_addr==rs2_addr   && IDEX_ctrl_regw   && rs2_addr!=0);
+    wire    MEM_forward_rs2=(EXMEM_regw_addr==rs2_addr  && EXMEM_ctrl_regw  && rs2_addr!=0);
+    wire    WB_forward_rs2 =(MEMWB_regw_addr==rs2_addr  && MEMWB_ctrl_regw  && rs2_addr!=0);
 	always@(posedge clk)begin //Rs2 combinational circuit(forwarding)
 		if (!stall)begin
             if      (EX_forward_rs2)	IDEX_rs2_data   <=  EXMEM_regw_data_w;

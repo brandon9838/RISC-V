@@ -92,14 +92,15 @@ localparam BLTU =3'b110;
 localparam BGEU =3'b111;
 
 
-assign IF_ctrl_jal = (IF_opcode==OP_JAL) 
+assign IF_ctrl_jal = (IF_opcode==OP_JAL); 
 assign mem_stall=I_mem_stall || D_mem_stall;
 assign stall=mem_stall||mult_stall;
 assign loaduse_bubble=  EXMEM_ctrl_lw &&
                         (EX_forward_rs1 || EX_forward_rs2);
-wire flush=IDEX_ctrl_beq_taken || IDEX_ctrl_jalr;
+wire flush=(IDEX_ctrl_beq_taken || IDEX_ctrl_jalr);
 assign IDEX_ctrl_beq_taken=(IDEX_ctrl_btype && EX_alu_out[0]);
-always@(posedge clk or negedege rst_n)begin
+
+always@(posedge clk or negedge rst_n)begin
     if (!rst_n)begin
         IFID_ctrl_rtype     <=0;     
         IFID_ctrl_itype     <=0;     
@@ -134,7 +135,7 @@ always@(posedge clk or negedege rst_n)begin
 		else begin
         	IFID_ctrl_rtype     <=(IF_opcode==OP_RTYPE);     
         	IFID_ctrl_itype     <=(IF_opcode==OP_ITYPE || IF_opcode==OP_LW || IF_opcode==OP_JALR);     
-        	IFID_ctrl_stype     <=(IF_opcode==OP_STYPE);     
+        	IFID_ctrl_stype     <=(IF_opcode==OP_SW);     
         	IFID_ctrl_btype     <=(IF_opcode==OP_BTYPE);     
         	IFID_ctrl_utype     <=(IF_opcode==OP_LUI || IF_opcode==OP_AUIPC);     
         	IFID_ctrl_jtype     <=(IF_opcode==OP_JAL);     
@@ -142,7 +143,7 @@ always@(posedge clk or negedege rst_n)begin
         	IFID_ctrl_auipc     <=(IF_opcode==OP_AUIPC);     
         	IFID_ctrl_lui       <=(IF_opcode==OP_LUI);     
         	IFID_ctrl_jalr      <=(IF_opcode==OP_JALR);     
-        	IFID_ctrl_regw      <=!(IF_opcode==NOP || IF_opcode==OP_BTYPE || IF_opcode==OP_SW);     
+        	IFID_ctrl_regw      <=!(IF_opcode==OP_NOP || IF_opcode==OP_BTYPE || IF_opcode==OP_SW);     
         	IFID_ctrl_lw        <=(IF_opcode==OP_LW);     
         	IFID_ctrl_sw        <=(IF_opcode==OP_SW);
 		end     

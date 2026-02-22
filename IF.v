@@ -15,13 +15,13 @@ module IF_stage#(
 	input 				IF_ctrl_jal,
     input               IDEX_ctrl_beq_taken,
     input               IDEX_ctrl_jalr,
-    input       [31:0]  IDEX_beq_addr,
-    input       [31:0]  IDEX_jalr_addr
+    input       [31:0]  EX_branch_addr,
+    input       [31:0]  EX_jalr_addr
 );
 
     reg         [31:0] pc_r,pc_w,pc4;
     reg         [31:0] IFID_pc_w;
-    reg         [31:0] IFID_inst_w,
+    reg         [31:0] IFID_inst_w;
     reg signed  [31:0] jal_offset;
     reg signed  [31:0] jal_addr;
     
@@ -47,8 +47,8 @@ module IF_stage#(
 
 	always@(*)begin //Combinational circuit 
 		if(stall || loaduse_bubble)	                pc_w=pc_r;
-		else if (IDEX_ctrl_beq_taken)				pc_w=IDEX_beq_addr;
-		else if (IDEX_ctrl_jalr)					pc_w=IDEX_jalr_addr;
+		else if (IDEX_ctrl_beq_taken)				pc_w=EX_branch_addr;
+		else if (IDEX_ctrl_jalr)					pc_w=EX_jalr_addr;
 		else if (IF_ctrl_jal)						pc_w=jal_addr; //keep io simple, does not pass this to 
 		else 										pc_w=pc4;
 	end                                 

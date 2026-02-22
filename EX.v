@@ -19,8 +19,10 @@ module EX_stage(
     input           [31:0]  IDEX_pc,
     input           [31:0]  IDEX_imm,       //for rtype, this is simply inst, get func7 from here
     input           [ 2:0]  IDEX_func3,
+    input           [ 4:0]  IDEX_regw_addr,
     output reg      [4 :0]  EXMEM_regw_addr,
     output reg      [31:0]  EXMEM_regw_data, //also sw addr
+    output reg      [31:0]  EXMEM_regw_data_w,
     output reg      [31:0]  EXMEM_sw_data, // sw data
     output          [31:0]  EX_alu_out,       // all b type comparison res and jalr addr
     output          [31:0]  EX_branch_addr,   // all b type addr
@@ -56,6 +58,8 @@ module EX_stage(
     localparam BLTU =3'b110;
     localparam BGEU =3'b111;
 
+    reg [31:0]  ALU_in1;
+    reg [31:0]  ALU_in2;
     reg [31:0]  ALU_out;
     reg [31:0]  ALU_add;
     reg [32:0]  ALU_sub;
@@ -94,7 +98,7 @@ module EX_stage(
     .ready          (mult_ready ),
     .data_out       (mult_out   )
     );
-    wire mult_stall=mult_start && !mult_ready;
+    assign mult_stall=mult_start && !mult_ready;
     always@(*)begin //ALU combinational circuit
 		//ALU input assignment
 		ALU_in1=(IDEX_ctrl_auipc)?IDEX_pc:IDEX_rs1_data;
@@ -246,14 +250,14 @@ always@(*)begin
     else                             shift_res=mult_res<<28;
 end
 always@(posedge clk)begin
-    if !(mem_stall && ready)begin
+    if (!(mem_stall && ready))begin
         if      (start && !(|progress))         data_out<=shift_res;
         else if (start || (|progress[6:0]))     data_out<=data_out+shift_res;
     end    
 end
 always@(posedge clk or negedge rst_n)begin
     if (!rst_n)                                 progress<=0;
-    else if !(mem_stall && ready)begin
+    else if (!(mem_stall && ready))begin
         if (start && !(|progress))              progress<=1;
         else                                    progress<=progress<<1;
     end    

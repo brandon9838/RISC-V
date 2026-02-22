@@ -11,7 +11,7 @@ module MEM_stage(
     output              DCACHE_ren,
     output              DCACHE_wen,
     output      [31:0]  DCACHE_addr,
-    output      [31:0]  DCACHE_wdata
+    output      [31:0]  DCACHE_wdata,
     output reg  [31:0]  MEMWB_regw_data,
     output reg  [31:0]  MEMWB_regw_data_w,
     output reg  [4 :0]  MEMWB_regw_addr
