@@ -176,15 +176,15 @@ MEM_stage umem_stage(
     .MEMWB_regw_addr   (MEMWB_regw_addr     )                
 );
 
-control u_sontrol(
+control u_control(
 	.clk                    (clk                    ),        
     .rst_n                  (rst_n                  ),      
     .IF_opcode              (ICACHE_rdata[6:0]      ),      //could use IFID_inst_w, but since stall/loaduse bubble will freeze update, it should be fine.    
 	.EX_alu_out             (EX_alu_out             ),             
     .EX_forward_rs1         (EX_forward_rs1         ),             
     .EX_forward_rs2         (EX_forward_rs2         ),             
-	.I_mem_stall            (I_mem_stall            ),                
-	.D_mem_stall            (D_mem_stall            ),                
+	.I_mem_stall            (ICACHE_stall           ),                
+	.D_mem_stall            (DCACHE_stall           ),                
     .mult_stall             (mult_stall             ),         
 	.IF_ctrl_jal            (IF_ctrl_jal            ),                
     .IFID_ctrl_rtype        (IFID_ctrl_rtype        ),                    

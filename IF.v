@@ -31,7 +31,7 @@ module IF_stage#(
         ICACHE_ren=1'b1;
         ICACHE_wen=1'b0;
         ICACHE_wdata=32'd0;
-        ICACHE_addr=pc_r[31:2];
+        ICACHE_addr=pc_r;
     end
 
     always@(*)begin

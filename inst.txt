@@ -1,16 +1,16 @@
-100b4	000100b7	        lui ra, 0x10	Load upper 20 bits of ra
-100b8	0ec08093	        addi ra, ra, 236	ra = 0x000100ec
-100bc	80000137	        lui sp, 0x80000	Start sp construction
-100c0	d9010113	        addi sp, sp, -624	sp = 0x7ffffd90
-100c4	000141b7	        lui gp, 0x14	Start gp construction
-100c8	dd818193	        addi gp, gp, -552	gp = 0x00013dd8
-100cc	000112b7	        lui t0, 0x11	Start t0 construction
-100d0	fe028293	        addi t0, t0, -32	t0 = 0x00010fe0
-100d4	00100513	        li a0, 1	Set a0 = 1
-100d8	00100713	        li a4, 1	Set a4 = 1
-100dc	800005b7	        lui a1, 0x80000	Start a1 construction
-100e0	da458593	        addi a1, a1, -604	Overwrites old sp line
-100e4	80000637	        lui a2, 0x80000	Overwrites old sw line
+100b4:	000100b7	        lui ra, 0x10	Load upper 20 bits of ra
+100b8:	0ec08093	        addi ra, ra, 236	ra = 0x000100ec
+100bc:	80000137	        lui sp, 0x80000	Start sp construction
+100c0:	d9010113	        addi sp, sp, -624	sp = 0x7ffffd90
+100c4:	000141b7	        lui gp, 0x14	Start gp construction
+100c8:	dd818193	        addi gp, gp, -552	gp = 0x00013dd8
+100cc:	000112b7	        lui t0, 0x11	Start t0 construction
+100d0:	fe028293	        addi t0, t0, -32	t0 = 0x00010fe0
+100d4:	00100513	        li a0, 1	Set a0 = 1
+100d8:	00100713	        li a4, 1	Set a4 = 1
+100dc:	800005b7	        lui a1, 0x80000	Start a1 construction
+100e0:	da458593	        addi a1, a1, -604	Overwrites old sp line
+100e4:	80000637	        lui a2, 0x80000	Overwrites old sw line
 100e8:	110000ef          	jal	101f8 <init_data>
 100ec:	da018513          	addi	a0,gp,-608 # 13b78 <A>
 100f0:	08050613          	addi	a2,a0,128
