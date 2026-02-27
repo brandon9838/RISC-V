@@ -9,6 +9,7 @@ module EX_stage(
     input                   IDEX_ctrl_jalr,
     input                   IDEX_ctrl_auipc,
     input                   IDEX_ctrl_lui,
+    input                   IDEX_ctrl_lw,
     input                   IDEX_ctrl_stype,
     input                   IDEX_ctrl_btype,
     input                   IDEX_ctrl_utype,
@@ -120,15 +121,17 @@ module EX_stage(
 		//ALU output MUX
 		if (IDEX_ctrl_itype) begin	//Itype
             if      (IDEX_ctrl_jalr)    ALU_out={ALU_add[31:1],1'b0}; //this is the jalr jump address
-			else if (IDEX_func3==SLTI)  ALU_out=ALU_less_signed;
+			else if (IDEX_ctrl_lw || 
+                     IDEX_func3==ADDI)  ALU_out=ALU_add; // addi/lw
+            else if (IDEX_func3==SLTI)  ALU_out=ALU_less_signed;
             else if (IDEX_func3==SLTIU) ALU_out=ALU_less_unsigned;
 			else if (IDEX_func3==ANDI)	ALU_out=ALU_and;
 			else if (IDEX_func3==ORI)	ALU_out=ALU_or;
 			else if (IDEX_func3==XORI)	ALU_out=ALU_xor;
-			else if (IDEX_func3==SLLI || 
-                     IDEX_func3==SRLI || 
-                     IDEX_func3==SRAI)	ALU_out=ALU_shift;
-			else						ALU_out=ALU_add; // addi/lw
+            else                        ALU_out=ALU_shift;
+			//else if (IDEX_func3==SLLI || 
+            //         IDEX_func3==SRLI || 
+            //         IDEX_func3==SRAI)	ALU_out=ALU_shift;
 		end
         else if (IDEX_ctrl_rtype) begin	//Rtype
 			if      (IDEX_func3==ADD)begin

@@ -136,7 +136,8 @@ EX_stage u_ex_stage(
     .IDEX_ctrl_itype         (IDEX_ctrl_itype   ),            
     .IDEX_ctrl_jalr          (IDEX_ctrl_jalr    ),            
     .IDEX_ctrl_auipc         (IDEX_ctrl_auipc   ),            
-    .IDEX_ctrl_lui           (IDEX_ctrl_lui     ),            
+    .IDEX_ctrl_lui           (IDEX_ctrl_lui     ),  
+    .IDEX_ctrl_lw            (IDEX_ctrl_lw      ),          
     .IDEX_ctrl_stype         (IDEX_ctrl_stype   ),            
     .IDEX_ctrl_btype         (IDEX_ctrl_btype   ),            
     .IDEX_ctrl_utype         (IDEX_ctrl_utype   ),            
@@ -157,7 +158,7 @@ EX_stage u_ex_stage(
     .mult_stall              (mult_stall        )        
 );
 
-MEM_stage umem_stage(
+MEM_stage u_mem_stage(
     .clk               (clk                 ),
     .rst_n             (rst_n               ),    
     .stall             (stall               ),    

@@ -47,14 +47,15 @@ module ID_stage(
 		rs1_data=register_r[rs1_addr];
 		rs2_data=register_r[rs2_addr];
 	end
-	
+	wire [31:0] test_pin=register_r[12];
     generate
     always @(posedge clk)
         register_r[0]<=0;
     for (i=1;i<32;i=i+1) begin
-        always @(posedge clk)
+        always @(posedge clk or negedge rst_n)begin
             if (MEMWB_regw_addr==i && MEMWB_ctrl_regw) 
-                register_r[MEMWB_regw_addr]<=MEMWB_regw_data;
+                register_r[i]<=MEMWB_regw_data;
+        end
     end
     endgenerate	
 
