@@ -138,6 +138,8 @@ module cpu_tb;
     always@( negedge clk )	begin
 		if(chip0.i_MIPS.u_if_stage.pc_r == END_PC) begin
             $display("reg write target completed: %d",reg_ptr);
+            $display("LW target completed: %d",lw_ptr);
+            $display("SW target completed: %d",sw_ptr);
 			$display("--------------------------- Simulation FINISH !!---------------------------");
 			$finish;
 		end
@@ -156,5 +158,24 @@ module cpu_tb;
             end
         end
     end
-    
+    always @(posedge clk) begin //lw check
+        if ( chip0.i_MIPS.u_mem_stage.DCACHE_ren && 
+             chip0.i_MIPS.u_if_stage.pc_r >=32'h100e8) begin
+            // Check Register Address
+            if (chip0.i_MIPS.u_mem_stage.DCACHE_addr  === expected_lw_addr[lw_ptr] &&
+                chip0.i_MIPS.u_mem_stage.DCACHE_rdata === expected_lw_data[lw_ptr]) begin
+                    lw_ptr = lw_ptr + 1;
+            end
+        end
+    end
+    always @(posedge clk) begin //sw check
+        if ( chip0.i_MIPS.u_mem_stage.DCACHE_wen && 
+             chip0.i_MIPS.u_if_stage.pc_r >=32'h100e8) begin
+            // Check Register Address
+            if (chip0.i_MIPS.u_mem_stage.DCACHE_addr  === expected_sw_addr[sw_ptr] &&
+                chip0.i_MIPS.u_mem_stage.DCACHE_wdata === expected_sw_data[sw_ptr]) begin
+                    sw_ptr = sw_ptr + 1;
+            end
+        end
+    end
 endmodule
