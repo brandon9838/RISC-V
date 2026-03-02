@@ -3,8 +3,8 @@
 
 module cpu_tb;
     localparam PC_START= 32'h00010228;   //32'h000100b4;
-    localparam PC_VALID= 32'h00010228;   //32'h100e8;
-    localparam END_PC=   32'h000103b0;   //32'h000100fc;
+    localparam PC_VALID= 32'h00000000;   //32'h100e8;
+    localparam END_PC=   32'h000103c0;   //32'h000100fc;
     localparam OFFSET_D= 134217681;   //5047
     localparam OFFSET_I= 4124;   //4107
 
@@ -173,13 +173,16 @@ module cpu_tb;
 
     // 3. Scoreboard Logic
     // Monitor the retirement (Write-Back) stage
-    
+    wire [32:0] reg_target=expected_reg_data[reg_ptr];
+    wire [32:0] reg_target_addr=expected_reg_addr[reg_ptr];
+
     always @(posedge clk) begin
         if ( chip0.i_MIPS.u_id_stage.MEMWB_ctrl_regw && 
              chip0.i_MIPS.u_if_stage.pc_r >=PC_VALID) begin
             // Check Register Address
             if (chip0.i_MIPS.u_id_stage.MEMWB_regw_addr === expected_reg_addr[reg_ptr] &&
                 chip0.i_MIPS.u_id_stage.MEMWB_regw_data === expected_reg_data[reg_ptr]) begin
+                    $display("reg write complete: %h",expected_reg_data[reg_ptr]);
                     reg_ptr = reg_ptr + 1;
             end
         end
@@ -190,6 +193,7 @@ module cpu_tb;
             // Check Register Address
             if (chip0.i_MIPS.u_mem_stage.DCACHE_addr  === expected_lw_addr[lw_ptr] &&
                 chip0.i_MIPS.u_mem_stage.DCACHE_rdata === expected_lw_data[lw_ptr]) begin
+                    $display("lw complete: %h",expected_lw_data[lw_ptr]);
                     lw_ptr = lw_ptr + 1;
             end
         end
@@ -200,6 +204,7 @@ module cpu_tb;
             // Check Register Address
             if (chip0.i_MIPS.u_mem_stage.DCACHE_addr  === expected_sw_addr[sw_ptr] &&
                 chip0.i_MIPS.u_mem_stage.DCACHE_wdata === expected_sw_data[sw_ptr]) begin
+                    $display("sw complete: %h",expected_sw_data[sw_ptr]);
                     sw_ptr = sw_ptr + 1;
             end
         end

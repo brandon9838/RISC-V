@@ -99,9 +99,10 @@ void main() {
 //inst2cache.py convert addr/data to full block to better fit in cache space.
 //this also print dmem addr min/max
 //remember to calculate cache offset according to the above method
+//remove the last "return" instruction, and add a few bubbles to let the instructions finish.
 //set tb param
 //localparam PC_START=    32'h00010238;
-//localparam END_PC=      32'h000103b0;
+//localparam END_PC=      32'h000103c0; 
 //localparam OFFSET_D=    2147482908//16=134217681
 //localparam OFFSET_I=    65984/16=4124
 //identify register initial state
