@@ -95,7 +95,7 @@ localparam BGEU =3'b111;
 assign IF_ctrl_jal = (IF_opcode==OP_JAL); 
 assign mem_stall=I_mem_stall || D_mem_stall;
 assign stall=mem_stall||mult_stall;
-assign loaduse_bubble=  EXMEM_ctrl_lw &&
+assign loaduse_bubble=  IDEX_ctrl_lw &&
                         (EX_forward_rs1 || EX_forward_rs2);
 wire flush=(IDEX_ctrl_beq_taken || IDEX_ctrl_jalr);
 assign IDEX_ctrl_beq_taken=(IDEX_ctrl_btype && EX_alu_out[0]);

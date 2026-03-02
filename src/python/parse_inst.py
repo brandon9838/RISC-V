@@ -22,4 +22,4 @@ def dis_to_bin(dis_file):
     addr_f.close()
     data_f.close()
 
-dis_to_bin("inst.txt")
+dis_to_bin("all_inst.txt")

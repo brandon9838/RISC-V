@@ -51,4 +51,4 @@ def generate_tb_files(input_file):
 
     for f in files.values(): f.close()
 
-generate_tb_files("clean_log.txt")
+generate_tb_files("clean_log_all_inst.txt")
