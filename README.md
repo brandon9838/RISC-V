@@ -42,3 +42,20 @@ The repository is organized into pre-compiled patterns from the Spike simulator,
 ### Prerequisites
 - iverilog
 - GTKWave (Optional, for waveform viewing)
+### How to Run
+1. Select a Pattern: Copy the necessary .bin files from the desired spike subfolder (e.g., /spike/mat_mul/) into the /src/verilog/ directory.
+   ```
+   These files are required for simulation.
+   instr_final.bin
+   reg_addr.bin
+   reg_data.bin
+   sw_addr.bin
+   sw_data.bin
+   lw_addr.bin
+   lw_data.bin
+   ```
+2. Execute Simulation: Navigate to /src/verilog/ and run the following commands:
+   ```
+   iverilog -o test.out tb_mat.v slow_memory.v CHIP.v cache.v riscv.v control.v MEM.v EX.v ID.v IF.v
+   vvp test.out
+   ```
