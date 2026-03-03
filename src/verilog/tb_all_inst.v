@@ -182,7 +182,7 @@ module cpu_tb;
             // Check Register Address
             if (chip0.i_MIPS.u_id_stage.MEMWB_regw_addr === expected_reg_addr[reg_ptr] &&
                 chip0.i_MIPS.u_id_stage.MEMWB_regw_data === expected_reg_data[reg_ptr]) begin
-                    $display("reg write complete: %h",expected_reg_data[reg_ptr]);
+                    //$display("reg write complete: %h",expected_reg_data[reg_ptr]);
                     reg_ptr = reg_ptr + 1;
             end
         end
@@ -193,7 +193,7 @@ module cpu_tb;
             // Check Register Address
             if (chip0.i_MIPS.u_mem_stage.DCACHE_addr  === expected_lw_addr[lw_ptr] &&
                 chip0.i_MIPS.u_mem_stage.DCACHE_rdata === expected_lw_data[lw_ptr]) begin
-                    $display("lw complete: %h",expected_lw_data[lw_ptr]);
+                    //$display("lw complete: %h",expected_lw_data[lw_ptr]);
                     lw_ptr = lw_ptr + 1;
             end
         end
@@ -204,7 +204,7 @@ module cpu_tb;
             // Check Register Address
             if (chip0.i_MIPS.u_mem_stage.DCACHE_addr  === expected_sw_addr[sw_ptr] &&
                 chip0.i_MIPS.u_mem_stage.DCACHE_wdata === expected_sw_data[sw_ptr]) begin
-                    $display("sw complete: %h",expected_sw_data[sw_ptr]);
+                    //$display("sw complete: %h",expected_sw_data[sw_ptr]);
                     sw_ptr = sw_ptr + 1;
             end
         end
