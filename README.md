@@ -2,7 +2,7 @@
 
 A **RISC-V (RV32IM)** processor implementation in Verilog.
 
-##Key Feature: Pattern Generation & Verification with Spike
+## Key Feature: Pattern Generation & Verification with Spike
 A key feature of this project is the simulation framework using Spike (RISC-V ISA Simulator). Rather than manually writing test cases, C programs are compiled and executed on Spike to generate "golden" instruction traces and memory dumps. Custom Python scripts (parse_log.py, inst2cache.py) then translate these traces into binary patterns (.bin) that are loaded directly into the Verilog testbench. This ensures that every register write and memory store in the 5-stage pipeline is cycle-accurate and functionally identical to the official RISC-V ISA specification.
 
 ## Supported Instruction Set
