@@ -39,6 +39,6 @@ The repository is organized into pre-compiled patterns from the Spike simulator,
 ```
 
 ## Verification Flow
-# Prerequisites
+### Prerequisites
 - iverilog
 - GTKWave (Optional, for waveform viewing)
