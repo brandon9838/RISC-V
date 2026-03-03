@@ -24,14 +24,14 @@ The following table lists the specific RV32IM subset currently implemented in th
 ---
 
 ## Project Structure
-The repository is organized into hardware source code, Python verification scripts, and pre-compiled patterns from the Spike simulator.
+The repository is organized into pre-compiled patterns from the Spike simulator, Python translation scripts, and hardware source code.
 
 ```text
 ├── spike/                  # Golden traces and binary patterns generated from spike
 │   ├── all_inst/           # Comprehensive instruction test
 │   └── mat_mul/            # Matrix multiplication 
 ├── src/
-│   ├── python/             # Log parsing and bin generation scripts
+│   ├── python/             # Log translation scripts
 │   └── verilog/            # Verilog Source Files
 │       ├── *.v             # RISC-V core implementation
 │       ├── tb_mat.v        # Testbench for matrix multiplication
